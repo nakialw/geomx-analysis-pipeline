@@ -1,291 +1,214 @@
-# GeoMx Spatial Transcriptomics Analysis Pipeline
+# GeoMx Modular Spatial Transcriptomics Analysis Pipeline
 
-A comprehensive, modular pipeline for analyzing NanoString GeoMx spatial transcriptomics data, from raw data processing to differential expression analysis.
+This pipeline provides a robust, modular, and reproducible workflow for multi-level differential expression analysis of GeoMx spatial transcriptomics data. It is designed for clarity, extensibility, and ease of use, with comprehensive validation and diagnostic checks at each stage.
 
 ## Overview
 
-This pipeline provides a complete workflow for GeoMx data analysis, organized into logical stages:
+The pipeline performs:
+- SCE annotation and validation
+- Processing and normalization
+- Pathway-level contrasts from GSVA output
+- Spatial deconvolution and cell type scoring
+- Transcript-level contrasts with MAST
+- Cell proportion heatmaps and statistical analysis
+- Volcano plots for differential expression
+- Post hoc analyses:
+  - Composite myeloid GSVA barplot (top 30 myeloid samples)
+  - Transcript-level volcano plots for top 5 Reactome pathways
+  - Top 20 and top 100 transcript volcano plots for MAST
+- Summary statistics and CSV outputs
 
-- **00.docker-instance/**: Docker setup and file transfer protocols
-- **0.sce-annotation/**: SCE object annotation and metadata management
-- **1.processing/**: Single.cell analysis and MAST differential expression
-- **2.analysis/**: Multi-level differential expression and visualization
+## Prerequisites
 
-## Pipeline Structure
-
-```
-gbm-st-code/
-├── 00.docker-instance/           # Docker setup and file transfer
-│   ├── docker_template.md        # Master Docker setup guide
-│   ├── new-instance-setup.md     # New instance initialization
-│   └── abi_base.sh              # Base shell script
-├── 0.sce-annotation/            # SCE object annotation
-│   ├── annotation_template.md    # Generalized annotation guide
-│   └── geomx-annotation.md       # Master annotation script
-├── 1.processing/                # Data processing and analysis
-│   ├── single.cell_combined.r    # Master processing script (includes MAST)
-│   └── single.cell_template.md   # Generalized processing guide
-├── 2.analysis/                  # Multi-level analysis and visualization
-│   ├── geomx-analysis-pipeline_modular.R  # Master analysis pipeline
-│   └── geomx-analysis-pipeline_template.md # Generalized analysis guide
-└── README.md                    # This file
-```
+- R with required packages: `readr`, `dplyr`, `ggrepel`, `pheatmap`, `tibble`, `ggplot2`, `tidyr`, `httr`
+- Output files from single-cell pipeline:
+  - GSVA pathway scores
+  - Spatial deconvolution cell type proportions
+  - MAST differential expression results
+- Sufficient disk space for output files
+- (Optional for post hoc): Clone the gene set repository:
+  ```sh
+  git clone https://github.com/andrewrech/single.cell.git
+  ```
 
 ## Quick Start
 
-### 1. Setup Environment
-```bash
-# Navigate to project directory
-cd gbm-st-code
+1. **Clone this repository**:
+   ```sh
+   git clone https://github.com/nakialw/geomx-analysis-pipeline.git
+   cd geomx-analysis-pipeline
+   ```
 
-# Review docker setup (if needed)
-cat 00.docker-instance/docker_template.md
+2. **Review the template**: Open `2.analysis/geomx-analysis-pipeline_template.md`
+
+3. **Modify parameters**: Update the user parameters section for your project
+
+4. **Run the analysis**: Copy the R code from the template and execute in R
+
+## Input Data Requirements
+
+### Required Files
+1. **GSVA pathway scores** - CSV file with Rct columns and metadata columns
+2. **Spatial deconvolution results** - CSV file with cell type proportions
+3. **MAST differential expression results** - CSV file with transcript-level statistics
+
+### File Naming Conventions
+- GSVA file should contain "gsva_graphics_hm.csv" in the filename
+- Spatial deconvolution file should contain "sdctm_sd_beta_hm.csv" in the filename  
+- MAST results file should contain "mast_sub_de.csv" in the filename
+
+### Expected Input File Structure
+```
+data_directory/
+├── *gsva_graphics_hm.csv          # GSVA pathway scores
+├── *sdctm_sd_beta_hm.csv          # Spatial deconvolution results
+└── *mast_sub_de.csv               # MAST differential expression results
 ```
 
-### 2. Annotate SCE Objects (if needed)
+## Configuration Parameters
+
+### Input/Output Paths
 ```r
-# Review annotation template
-# Modify 0.sce-annotation/annotation_template.md for your project
-# Run annotation script
-source("0.sce-annotation/geomx-annotation.md")
+root_dir <- "~/path/to/geomx/data"
+project_name <- "geomx_analysis_name"
 ```
 
-### 3. Run Processing Pipeline
+### File Patterns
 ```r
-# Configure parameters in single.cell_combined.r
-# Run combined analysis
-source("1.processing/single.cell_combined.r")
-```
-
-### 4. Run Analysis Pipeline
-```r
-# Configure parameters in geomx-analysis-pipeline_modular.R
-# Run modular analysis
-source("2.analysis/geomx-analysis-pipeline_modular.R")
-```
-
-## Detailed Usage
-
-### Stage 0: Docker Setup (Optional)
-
-If you need to set up a new Docker environment:
-
-1. **Review the template**: `00.docker-instance/docker_template.md`
-2. **Configure paths**: Modify docker configuration for your system
-3. **Set up container**: Follow the setup instructions
-4. **Transfer files**: Use the file transfer protocols
-
-### Stage 1: SCE Annotation (Optional)
-
-If you need to annotate your SCE objects:
-
-1. **Review the template**: `0.sce-annotation/annotation_template.md`
-2. **Configure experimental design**: Define your experimental groups
-3. **Run annotation**: Execute the annotation script
-4. **Validate results**: Check the Excel output for verification
-
-### Stage 2: Data Processing
-
-The main processing pipeline combines single.cell analysis and MAST differential expression:
-
-1. **Configure parameters**: Modify the user configuration section in `single.cell_combined.r`
-2. **Set input/output paths**: Point to your SCE object and desired output directory
-3. **Define experimental design**: Configure timepoints, subjects, and analysis parameters
-4. **Run analysis**: Execute the script to generate:
-   - Quality control reports
-   - GSVA pathway scores
-   - Spatial deconvolution results
-   - MAST differential expression results
-
-### Stage 3: Multi-level Analysis
-
-The analysis pipeline performs comprehensive downstream analysis:
-
-1. **Configure parameters**: Modify the user configuration section in `geomx-analysis-pipeline_modular.R`
-2. **Set file patterns**: Configure patterns to find your analysis outputs
-3. **Run analysis**: Execute the script to generate:
-   - Cell proportion heatmaps
-   - Pathway-level contrasts
-   - Transcript-level analysis
-   - Summary statistics
-
-## Configuration
-
-### Key Parameters
-
-#### Processing Pipeline (`single.cell_combined.r`)
-```r
-# Input/Output paths
-input_sce_path <- "/path/to/your/annotated_sce.RDS"
-output_dir <- "/path/to/output/directory"
-project_name <- "your_project_name"
-
-# Analysis parameters
-assay_idx <- 2  # Which assay to use
-assay_type <- "wta"  # Assay type
-test_type <- "mast"  # Statistical test
-
-# Experimental design
-timepoints <- c("Pre-inf", "Post-inf")
-subjects <- c("04", "10")
-```
-
-#### Analysis Pipeline (`geomx-analysis-pipeline_modular.R`)
-```r
-# Input/Output paths
-root_dir <- "/path/to/your/data/directory"
-project_name <- "your_project_name"
-
-# File patterns
 gsva_file_pattern <- "gsva_graphics_hm.csv"
 sdctm_file_pattern <- "sdctm_sd_beta_hm.csv"
 mast_file_pattern <- "mast_sub_de.csv"
-
-# Analysis parameters
-subject_ref <- "04"  # Baseline subject
-tcell_threshold <- 55  # T-cell classification threshold
 ```
+
+### Analysis Parameters
+```r
+subject_ref <- "04"  # Baseline subject for contrasts
+tcell_threshold <- 55  # Cut-off for "Tcell_high" classification
+safeTME_T <- c("CD4.T.cells","CD8.T.cells", "Treg")
+```
+
+### Output Options
+```r
+save_heatmaps <- TRUE
+save_csv_results <- TRUE
+create_volcano_plot <- TRUE
+```
+
+## Workflow Components
+
+### 1. SCE Annotation & Validation
+- Annotates and validates SCE objects, ensuring correct structure and metadata.
+
+### 2. Processing & Normalization
+- Loads and processes GSVA, spatial deconvolution, and MAST results.
+- Adds T-cell scores and groupings.
+
+### 3. Cell Composition Analysis
+- **Heatmaps**: Hierarchical clustering by timepoint, subject, region type, and all annotations.
+- **Statistical Analysis**: Volcano-style plot showing differential cell proportions between timepoints.
+
+### 4. Pathway-Level Analysis
+- **Post vs Pre**: Compares post-infusion vs pre-infusion timepoints.
+- **High vs Low T-cell**: Compares high vs low T-cell infiltration regions.
+- **Interaction**: Combined effect of timepoint and T-cell status.
+- Results saved as CSV with FDR-adjusted p-values.
+
+### 5. Transcript-Level Analysis (MAST)
+- Processes MAST differential expression results.
+- **Volcano plots**:
+  - Top 20 DE transcripts (red, labeled)
+  - Top 100 DE transcripts (red, labeled)
+- Results saved as CSV and PNG.
+
+### 6. Post Hoc Analyses
+- **Composite Myeloid GSVA Barplot**: Computes a composite myeloid score from macrophages, monocytes, mDCs, pDC, and neutrophils. Plots the median GSVA score for selected myeloid pathways in the top 30 myeloid samples.
+- **Transcript-level Volcano Plots for Top Pathways**: For the top 5 Reactome pathways (by GSVA), loads gene sets from a local clone of the gene set repository, filters MAST results for those genes, and plots volcano plots (top 20 most significant transcripts for each pathway).
+
+### 7. Summary Statistics
+- Reports percentage of significant pathways for each contrast.
+- Provides overview of analysis results.
 
 ## Output Structure
 
-### Processing Pipeline Outputs
-```
-output_directory/
-├── qc/
-│   └── project_name_*.pdf/png
-├── analysis/
-│   ├── project_name_batch_*.csv/pdf/png
-│   └── project_name_comparison_*.csv/pdf/png
-└── mast_analysis/
-    └── project_name_mast_analysis_*.csv/pdf/png
-```
-
-### Analysis Pipeline Outputs
 ```
 analysis_results/
-├── project_name_cell_heatmap_*.png
-├── project_name_gsva_*.csv
-├── project_name_mast_processed.csv
-├── project_name_volcano_plot.png
-└── project_name_summary_stats.csv
+├── gbm_geomx_I_cell_heatmap_subject.png
+├── gbm_geomx_I_cell_heatmap_region.png
+├── gbm_geomx_I_cell_heatmap_timepoint.png
+├── gbm_geomx_I_cell_heatmap_all_annotations.png
+├── gbm_geomx_I_cell_proportion_statistics.png
+├── gbm_geomx_I_gsva_post_vs_pre.csv
+├── gbm_geomx_I_gsva_high_vs_low.csv
+├── gbm_geomx_I_gsva_postHigh_vs_preLow.csv
+├── gbm_geomx_I_mast_processed.csv
+├── gbm_geomx_I_volcano_top20.png
+├── gbm_geomx_I_volcano_top100.png
+├── gbm_geomx_I_posthoc_myeloid_gsva_median_barplot.png
+├── gbm_geomx_I_volcano_<pathway>.png (for each top Reactome pathway)
+└── gbm_geomx_I_summary_stats.csv
 ```
 
-## Key Features
+## Usage
 
-### Modularity
-- Each stage can be run independently
-- Configurable parameters for different projects
-- Generalized templates for reusability
+1. **Review the template**: Open `2.analysis/geomx-analysis-pipeline_template.md`
+2. **Modify configuration parameters** in the user parameters section
+3. **Ensure input files are available** in the specified directory
+4. **(Optional for post hoc)**: Clone the gene set repository to your machine
+5. **Copy and run the R code** in your R environment
+6. **Check output directory** for results and visualizations
 
-### Error Handling
-- Comprehensive error checking and reporting
-- Graceful failure handling
-- Progress reporting throughout
+## Customization Points
 
-### Flexibility
-- Support for different experimental designs
-- Configurable analysis parameters
-- Multiple output formats
+### File Paths and Patterns
+- Modify `root_dir` and `project_name` for your project
+- Adjust file patterns if your files are named differently
+- Update `geneset_local_dir` for pathway-specific analysis
 
-### Reproducibility
-- Version-controlled scripts
-- Documented parameter configurations
-- Generalized templates for future use
+### Analysis Parameters
+- Set `subject_ref` to your baseline subject
+- Adjust `tcell_threshold` based on your data distribution
+- Modify `safeTME_T` to match your cell type column names
+
+### Output Options
+- Control which outputs are generated with boolean flags
+- Customize plot parameters and file naming
 
 ## Troubleshooting
 
 ### Common Issues
+1. **File not found errors**: Check file patterns and directory paths
+2. **Missing T-cell columns**: The script will automatically search for alternatives
+3. **Memory issues**: Consider processing data in chunks for large datasets
+4. **Plot generation errors**: Ensure output directory is writable
 
-1. **File not found errors**
-   - Check file paths and patterns
-   - Verify file naming conventions
-   - Ensure files are accessible
+### Debug Information
+The script provides extensive console output to help identify issues:
+- File discovery messages
+- Column availability checks
+- Data summary statistics
+- Progress indicators for each analysis step
 
-2. **Memory issues**
-   - Reduce parallelism settings
-   - Process data in smaller chunks
-   - Increase container memory if using Docker
+### Additional Troubleshooting
+- **Missing columns**: Verify input files have required metadata columns
+- **Gene set file errors**: For post hoc analyses, ensure the gene set files exist locally and the pathway names match the file names
+- **Path errors**: Check that all paths are accessible and writable
 
-3. **Package dependency issues**
-   - Install required R packages
-   - Check Bioconductor package versions
-   - Verify R environment setup
+## Template Features
 
-### Getting Help
+The analysis pipeline template (`2.analysis/geomx-analysis-pipeline_template.md`) includes:
 
-1. **Check templates**: Review the `*_template.md` files for guidance
-2. **Validate inputs**: Ensure your data matches expected formats
-3. **Check logs**: Review console output for specific error messages
-4. **Test with subset**: Try running with a smaller data subset first
+- **Complete R script** with no placeholders
+- **Clear section breaks** with descriptive headers
+- **Prerequisites and input requirements**
+- **Detailed explanations** for each analysis component
+- **Customization guidance** for different projects
+- **Troubleshooting section** for common issues
+- **Output file descriptions** and organization
 
-## Customization
-
-### Adding New Analyses
-
-1. **Modify experimental design**: Update the experimental design configuration
-2. **Add new contrasts**: Extend the analysis pipeline with new comparisons
-3. **Customize visualizations**: Modify plotting parameters and color schemes
-4. **Add new outputs**: Extend the output generation functions
-
-### Adapting for Different Data Types
-
-1. **Update file patterns**: Modify file discovery patterns for your data
-2. **Adjust parameters**: Configure analysis parameters for your experimental design
-3. **Modify cell types**: Update T-cell type definitions for your spatial deconvolution
-4. **Customize thresholds**: Adjust classification thresholds based on your data
-
-## Best Practices
-
-1. **Version control**: Keep scripts under version control
-2. **Documentation**: Document any custom modifications
-3. **Testing**: Test with small datasets before full analysis
-4. **Backup**: Keep backup copies of important data and results
-5. **Validation**: Always validate results and check for expected patterns
-
-## Dependencies
-
-### R Packages
-- `andrew.rech`
-- `single.cell`
-- `magrittr`
-- `data.table`
-- `HDF5Array`
-- `readr`
-- `dplyr`
-- `ggplot2`
-- `ggrepel`
-- `pheatmap`
-- `tibble`
-- `digest`
-- `openxlsx`
-
-### System Requirements
-- R 4.0+
-- Sufficient memory for data processing
-- Docker (optional, for containerized analysis)
-
-## Contributing
-
-When modifying the pipeline:
-
-1. **Update templates**: Keep generalized templates current
-2. **Document changes**: Add comments and update documentation
-3. **Test thoroughly**: Ensure modifications work with different datasets
-4. **Maintain compatibility**: Preserve backward compatibility where possible
-
-## License
-
-This pipeline is provided for research use. Please cite appropriate references for the underlying methods and tools used.
-
-## Support
-
-For questions or issues:
-
-1. Check the troubleshooting section
-2. Review the template files for guidance
-3. Validate your data and configuration
-4. Test with smaller datasets first
-
----
-
-**Note**: This pipeline is designed for GeoMx spatial transcriptomics data. Adaptations may be needed for other spatial transcriptomics platforms or experimental designs. 
+## Notes
+- The pipeline automatically finds files using pattern matching
+- All analyses include progress reporting and debug information
+- Results are saved in both CSV and visualization formats
+- The script creates necessary output directories automatically
+- Post hoc analyses require local access to gene set files
+- The template is designed to be copy-paste ready with minimal modifications 
